@@ -48,7 +48,7 @@ export default function BrothersFight() {
               className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-full font-semibold transition-colors flex items-center mx-auto space-x-2"
             >
               <Guitar className="w-5 h-5" />
-              <span>Dato Curioso: La Guitarra de Noel</span>
+              <span>La Guitarra de Noel</span>
               <Info className="w-4 h-4" />
             </button>
           </div>
