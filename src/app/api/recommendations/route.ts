@@ -79,10 +79,10 @@ export async function POST(request: NextRequest) {
 
     // Procesar imagen si existe
     if (imageFile && imageFile.size > 0) {
-      // Validar tamaño (5MB máximo)
-      if (imageFile.size > 5 * 1024 * 1024) {
+      // Validar tamaño (500MB máximo)
+      if (imageFile.size > 500 * 1024 * 1024) {
         return NextResponse.json(
-          { success: false, error: 'La imagen no puede ser mayor a 5MB' },
+          { success: false, error: 'La imagen no puede ser mayor a 500MB' },
           { status: 400 }
         )
       }

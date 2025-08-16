@@ -80,8 +80,8 @@ export default function RecommendationModal({ isOpen, onClose, onSubmit, editDat
   }
 
   const handleImageChange = (file: File) => {
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      showToast('🎸 ¡Oye! La imagen es muy pesada. Máximo 5MB como "Champagne Supernova".', 'warning')
+    if (file.size > 500 * 1024 * 1024) { // 500MB limit
+      showToast('🎸 ¡Oye! La imagen es muy pesada. Máximo 500MB como "Champagne Supernova".', 'warning')
       return
     }
 
@@ -340,7 +340,7 @@ export default function RecommendationModal({ isOpen, onClose, onSubmit, editDat
                         </button>
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        PNG, JPG, GIF hasta 5MB
+                        PNG, JPG, GIF hasta 500MB
                       </p>
                     </div>
                   </div>
