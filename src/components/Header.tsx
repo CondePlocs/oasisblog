@@ -4,13 +4,26 @@ import { useState, useEffect } from 'react'
 import { Menu, X, User, Guitar } from 'lucide-react'
 import LoginModal from './LoginModal'
 import UserProfileModal from './UserProfileModal'
+import RecommendationModal from './RecommendationModal'
+import RecommendationTable from './RecommendationTable'
+import Toast from './Toast'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState(false)
+  const [isRecommendationTableOpen, setIsRecommendationTableOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [recommendations, setRecommendations] = useState<any[]>([])
+  const [editingRecommendation, setEditingRecommendation] = useState<any>(null)
+  const [toast, setToast] = useState<{
+    message: string
+    type: 'success' | 'error' | 'warning'
+    isVisible: boolean
+  }>({ message: '', type: 'success', isVisible: false })
 
   useEffect(() => {
     checkAuth()
@@ -38,6 +51,27 @@ export default function Header() {
     } catch (error) {
       console.error('Logout error:', error)
     }
+  }
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
+    setToast({ message, type, isVisible: true })
+  }
+
+  const loadRecommendations = async () => {
+    try {
+      const response = await fetch('/api/recommendations')
+      const result = await response.json()
+      if (result.success) {
+        setRecommendations(result.recommendations)
+      }
+    } catch (error) {
+      console.error('Error loading recommendations:', error)
+    }
+  }
+
+  const handleGuitarClick = async () => {
+    await loadRecommendations()
+    setIsRecommendationTableOpen(true)
   }
 
   return (
@@ -77,6 +111,7 @@ export default function Header() {
                   <span className="text-sm font-medium">{user.name}</span>
                 </button>
                 <button 
+                  onClick={handleGuitarClick}
                   className="p-2 hover:bg-white/10 rounded-full transition-colors"
                   title="Recomendar Canciones"
                 >
@@ -93,6 +128,7 @@ export default function Header() {
                   <User className="w-6 h-6" />
                 </button>
                 <button 
+                  onClick={handleGuitarClick}
                   className="p-2 hover:bg-white/10 rounded-full transition-colors"
                   title="Recomendar Canciones"
                 >
@@ -132,7 +168,10 @@ export default function Header() {
                       <User className="w-5 h-5" />
                       <span>{user.name}</span>
                     </button>
-                    <button className="flex items-center space-x-2 p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <button 
+                      onClick={handleGuitarClick}
+                      className="flex items-center space-x-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    >
                       <Guitar className="w-5 h-5" />
                       <span>Recomendar</span>
                     </button>
@@ -146,7 +185,10 @@ export default function Header() {
                       <User className="w-5 h-5" />
                       <span>Login</span>
                     </button>
-                    <button className="flex items-center space-x-2 p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <button 
+                      onClick={handleGuitarClick}
+                      className="flex items-center space-x-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    >
                       <Guitar className="w-5 h-5" />
                       <span>Recomendar</span>
                     </button>
@@ -173,6 +215,80 @@ export default function Header() {
           onLogout={handleLogout}
         />
       )}
+
+      {/* Recommendation Modal */}
+      <RecommendationModal 
+        isOpen={isRecommendationModalOpen}
+        onClose={() => {
+          setIsRecommendationModalOpen(false)
+          setEditingRecommendation(null)
+        }}
+        onSubmit={async (data) => {
+          await loadRecommendations()
+          setIsRecommendationModalOpen(false)
+          setEditingRecommendation(null)
+          setIsRecommendationTableOpen(true)
+        }}
+        editData={editingRecommendation}
+      />
+
+      {/* Recommendation Table Modal */}
+      {isRecommendationTableOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden relative">
+            <RecommendationTable 
+              recommendations={recommendations}
+              onEdit={(rec) => {
+                setEditingRecommendation(rec)
+                setIsRecommendationTableOpen(false)
+                setIsRecommendationModalOpen(true)
+              }}
+              onDelete={async (id) => {
+                try {
+                  const response = await fetch(`/api/recommendations/${id}`, {
+                    method: 'DELETE'
+                  })
+                  const result = await response.json()
+                  if (result.success) {
+                    await loadRecommendations()
+                    showToast('🎵 Recomendación eliminada exitosamente', 'success')
+                  } else {
+                    showToast('❌ Error al eliminar la recomendación', 'error')
+                  }
+                } catch (error) {
+                  showToast('❌ Error al eliminar la recomendación', 'error')
+                }
+              }}
+              onAdd={() => {
+                if (!user) {
+                  setIsRecommendationTableOpen(false)
+                  showToast('🎸 ¡Debes iniciar sesión para recomendar canciones! "You gotta roll with it"', 'warning')
+                  setIsLoginModalOpen(true)
+                  return
+                }
+                setEditingRecommendation(null)
+                setIsRecommendationTableOpen(false)
+                setIsRecommendationModalOpen(true)
+              }}
+              currentUserId={user?.id}
+            />
+            <button
+              onClick={() => setIsRecommendationTableOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/30 rounded-full transition-colors z-10"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+      />
     </header>
   )
 }

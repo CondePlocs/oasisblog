@@ -1,17 +1,13 @@
 import { jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
+import { NextRequest } from 'next/server'
+import prisma from './prisma'
 
-const JWT_SECRET = new TextEncoder().encode(
+const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || 'oasis-secret-key-live-forever'
 )
 
-export interface User {
-  userId: string
-  email: string
-  name: string
-}
-
-export async function getUser(): Promise<User | null> {
+export async function getUser() {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')
@@ -20,25 +16,66 @@ export async function getUser(): Promise<User | null> {
       return null
     }
 
-    const { payload } = await jwtVerify(token.value, JWT_SECRET)
+    const { payload } = await jwtVerify(token.value, secret)
     
-    return {
-      userId: payload.userId as string,
-      email: payload.email as string,
-      name: payload.name as string
+    if (!payload.userId) {
+      return null
     }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId as string },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+
+    return user
   } catch (error) {
-    console.error('Error verificando token:', error)
+    console.error('Error verifying token:', error)
     return null
   }
 }
 
-export async function requireAuth(): Promise<User> {
-  const user = await getUser()
-  
-  if (!user) {
-    throw new Error('No autorizado')
+export async function getUserFromRequest(request: NextRequest) {
+  try {
+    const token = request.cookies.get('auth-token')
+
+    if (!token) {
+      return null
+    }
+
+    const { payload } = await jwtVerify(token.value, secret)
+    
+    if (!payload.userId) {
+      return null
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId as string },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+
+    return user
+  } catch (error) {
+    console.error('Error verifying token:', error)
+    return null
   }
-  
+}
+
+export async function requireAuth() {
+  const user = await getUser()
+  if (!user) {
+    throw new Error('Authentication required')
+  }
   return user
 }

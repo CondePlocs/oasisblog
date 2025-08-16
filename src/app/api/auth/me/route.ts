@@ -15,7 +15,7 @@ export async function GET() {
 
     // Obtener datos completos del usuario desde la base de datos
     const fullUser = await prisma.user.findUnique({
-      where: { id: user.userId },
+      where: { id: user.id },
       select: {
         id: true,
         name: true,

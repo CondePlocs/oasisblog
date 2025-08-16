@@ -18,5 +18,25 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relaciones
+  recommendations Recommendation[]
+
   @@map("users")
+}
+
+model Recommendation {
+  id         String   @id @default(cuid())
+  userId     String
+  songName   String
+  albumName  String
+  artistName String
+  imageUrl   String?
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relaciones
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("recommendations")
 }
